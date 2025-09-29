@@ -31,12 +31,15 @@ Given the industrial motivation of this project, the training set will primarily
 One notable challenge of this dataset is the high imbalance between normal and defective samples, which reflects real-world distributions but also increases the risk of bias toward over-generalizing “normal” patterns. Furthermore, some defect categories exhibit very subtle visual cues, requiring the model to learn highly sensitive structural representations to distinguish them. Preprocessing steps such as normalization, potential resizing, and possibly grayscale binarization will be considered to reduce irrelevant noise and enhance structural contrast.
 
 In addition to using WM-811K, I plan to reach out to real-world industry partners or internal university research labs to explore access to authentic wafer data. If granted, such datasets would serve not only to validate the proposed model in a realistic deployment scenario, but also potentially allow for experimental deployment or feedback from domain experts. The overarching goal is to develop a solution that is not only academically valid, but also practically viable in high-precision industrial environments.
-
+-----------------------------------------0929 Update---------------------------------------------------
 Part 4: Feature & Invariance Considerations
 Our model aims to detect structural anomalies in wafer maps, such as symmetry breaks, irregular patterns, or local pixel disruptions. These features are more meaningful than raw pixel values and better reflect actual production defects.
 At the same time, the model should be robust to irrelevant variations like minor changes in brightness, slight rotations, or small shifts. These factors are common in real-world data and should not trigger false alarms.
 We prioritize high sensitivity to subtle defects while maintaining invariance to uninformative noise, ensuring the model can detect real problems without overreacting to harmless variation.
+
+
 This project will be completed individually.
+
 
 
 
