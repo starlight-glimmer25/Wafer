@@ -129,6 +129,53 @@ Limited generalization — The method performs reliably only under uniform light
 Despite these shortcomings, this baseline is valuable because it verifies the data-processing flow, enables quantitative feature extraction, and provides a benchmark for future enhancement.
 Subsequent stages will incorporate more advanced techniques—such as Gabor-wavelet texture descriptors and self-supervised DINOv3 embeddings—to overcome the above weaknesses and achieve robust, semantically meaningful defect detection.
 
+@@@ Run Instructions @@@
+1. Environment Setup
+
+Before running the project, please make sure the following dependencies are installed:
+
+pip install numpy pandas matplotlib opencv-python scikit-learn joblib
+
+
+If using Jupyter Notebook (recommended), execute the cells sequentially to visualize intermediate results.
+
+2. Data Preparation
+
+This project uses the WM-811K (LSWMD) wafer defect dataset.
+
+The original .pki file is in a legacy format; conversion and compatibility are already handled automatically at the beginning of the notebook.
+
+Please place the downloaded file LSWMD.pki inside the archive/ folder under the project root directory.
+
+Dataset download link (Kaggle official):
+https://www.kaggle.com/datasets/qingyi/wm811k-wafer-map
+
+3. Run the Main Notebook
+
+Open and execute the following notebook:
+
+jupyter notebook wafer-part-3-update.ipynb
+
+
+Alternatively, open it directly in VSCode or JupyterLab and run all cells in order.
+
+The notebook automatically performs the following steps:
+
+Loads and converts the legacy .pki data file.
+
+Performs data preprocessing and cleaning (removing invalid samples, normalizing pixel values).
+
+Conducts wafer image segmentation using a manual threshold of 128.
+
+Extracts 12 classical, interpretable features (e.g., defect ratio, centroid, symmetry, edge density).
+
+Outputs a structured features_df DataFrame for later clustering or classification analysis.
+
+4. Output Results
+
+features_df.csv (or DataFrame): contains 12 extracted features per wafer sample.
+
+Visualization outputs (matplotlib plots): original wafer and defect overlay in soft pink/green colors.
 
 
 
