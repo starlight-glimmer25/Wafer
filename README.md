@@ -37,6 +37,100 @@ Our model aims to detect structural anomalies in wafer maps, such as symmetry br
 At the same time, the model should be robust to irrelevant variations like minor changes in brightness, slight rotations, or small shifts. These factors are common in real-world data and should not trigger false alarms.
 We prioritize high sensitivity to subtle defects while maintaining invariance to uninformative noise, ensuring the model can detect real problems without overreacting to harmless variation.
 
+---------------------------------------Part3---First Update----------------------------------------------
+Part 3: Data Preprocessing, Segmentation and Feature Extraction
+1. Data Preprocessing
+This project uses an open wafer map defect detection dataset, where each sample is a 2-D matrix and each pixel value corresponds to a chip region’s yield status.
+Preprocessing steps include:
+	Reading wafer maps from the DataFrame and converting them to NumPy arrays.
+	Normalizing pixel values to the range 0,255to work with OpenCV operations.
+	Removing empty or invalid entries to ensure valid image data.
+These operations stabilize segmentation and standardize inputs for feature extraction.
+
+2. Image Segmentation
+Two segmentation strategies were tested:
+(a) Otsu Adaptive Thresholding
+Otsu’s method computes a global threshold automatically, but performed poorly because the wafer images are brightness-uniform — it often classified the entire wafer as foreground, losing defect information.
+(b) Manual Fixed Thresholding
+A fixed threshold was applied and compared across values:
+	100 → wafer region disappeared (blank image).
+	150 → wafer shape retained but fine defects lost.
+	128 → best contrast and preserved circular structure.
+Thus, threshold = 128 was selected as the standard setting — efficient, interpretable, and CPU-friendly.
+
+3. Feature Extraction
+We extracted twelve classical, interpretable features from each segmented wafer map. These features are designed to capture both spatial and structural properties of wafer defects in a way that does not rely on training or labeling, making them ideal for unsupervised or semi-supervised anomaly detection.
+
+(1) Defect ratio — the proportion of defective pixels relative to the total wafer area, representing the overall defect intensity.
+(2) Number of regions — the count of connected defect components, indicating how fragmented or clustered the defects are.
+(3) Average region area — the typical size of connected defect regions, useful for distinguishing local point defects from large continuous failures.
+(4) Maximum region area — captures extreme cases such as near-full or large ring-type defects.
+(5) Centroid_x — the normalized horizontal coordinate of the overall defect center, showing whether the defects are left/right biased.
+(6) Centroid_y — the normalized vertical coordinate of the defect center, showing top/bottom positional bias.
+(7) Radial mean — the mean normalized distance of defect pixels from the wafer center, distinguishing center-type versus edge-type patterns.
+(8) Radial standard deviation — measures how uniformly defects are distributed across the radius; low values imply concentrated defects, while high values suggest scattered patterns.
+(9) Edge ratio — the fraction of defect pixels located near the wafer’s periphery, sensitive to edge-ring or edge-loc defects.
+(10) Left–right symmetry — the IoU-based similarity between the mask and its horizontal flip, indicating structural symmetry across the wafer’s vertical axis.
+(11) Top–bottom symmetry — the IoU-based similarity between the mask and its vertical flip, capturing horizontal symmetry or imbalance.
+(12) Edge density — the proportion of strong edges detected using the Canny operator, highly responsive to linear or scratch-like defects.
+
+Justification:
+These twelve features were selected to achieve a balance between physical interpretability and computational simplicity.
+They represent multiple perspectives of wafer quality — intensity, geometry, location, and symmetry — all of which are crucial in real semiconductor manufacturing defect analysis.
+Compared to deep-learning-based embeddings (e.g., DINOv3 or Autoencoder features), these hand-crafted features have the advantages of being fully explainable, requiring no GPU resources, and being feasible for quick iteration in the early phase of the project.
+In future phases, these classical descriptors can serve as a baseline for validating the improvements achieved by deep visual representations.
+
+【Example Photo】<img width="1858" height="926" alt="image" src="https://github.com/user-attachments/assets/0b6eeb77-870f-4a1d-963c-d446380db4d6" />
+
+
+4. Methodology Justification
+We adopted a traditional segmentation + feature pipeline because:
+	The goal is to build an interpretable, lightweight baseline before introducing deep models.
+	Classical methods are training-free, GPU-independent, and fast on CPUs.
+	Extracted features have direct physical meaning aligned with wafer defect morphology.
+
+5. Future Work and Optimization Directions
+(1) Integration of Gabor Wavelet Features
+Gabor filters are frequency- and orientation-selective kernels capable of capturing fine texture and directional patterns such as scratches or edge-rings. By building a multi-scale, multi-orientation Gabor filter bank and extracting energy-based statistics, we can add richer local descriptors to the current global statistical features. This extension would serve as a CPU-friendly short-term upgrade that enhances sensitivity to low-contrast directional defects.
+(2) High-Level Representation via DINOv3
+We also plan to apply DINOv3, a self-supervised vision transformer, to extract semantic embeddings from wafer images. Current hardware (Intel Arc GPU without CUDA) prevents local execution, but future GPU access on CRC clusters will allow testing. Comparing DINOv3 embeddings with classical and Gabor features will bridge interpretability and representation power.
+Together, these two paths outline a clear roadmap for enhancing this baseline pipeline from statistical to hybrid feature learning.
+
+6. Summary
+The current stage completes a working pipeline from data preprocessing to segmentation and feature extraction. Manual threshold = 128 preserves wafer geometry while isolating defects, and the extracted features are well-suited for subsequent analysis.
+Future tasks will include GPU-based DINOv3 testing, Gabor feature integration, and clustering/classification experiments for automatic defect categorization.
+Additional Discussion — Pipeline Limitations and Rationale
+
+This stage of the project primarily focuses on establishing a fully functional end-to-end pipeline, rather than optimizing ultimate detection performance.
+The manual-threshold segmentation (fixed at 128) successfully isolates bright defect pixels while preserving the circular wafer geometry, serving as a transparent and interpretable baseline.
+However, several inherent limitations remain:
+Low-contrast defects — When defect brightness is close to the wafer background, they are often missed because a single global threshold lacks sensitivity.
+Structural patterns — Continuous defects such as rings or scratches may be fragmented, as global thresholding is not geometry-aware.
+Noise and minor artifacts — Isolated bright pixels can be incorrectly detected as defects without post-processing or morphological filtering.
+Limited generalization — The method performs reliably only under uniform lighting and clearly defined contrast conditions, which may not hold for real-world manufacturing data.
+Despite these shortcomings, this baseline is valuable because it verifies the data-processing flow, enables quantitative feature extraction, and provides a benchmark for future enhancement. Subsequent stages will incorporate more advanced techniques—such as Gabor-wavelet texture descriptors and self-supervised DINOv3 embeddings—to overcome the above weaknesses and achieve robust, semantically meaningful defect detection.
+
+***Additional Discussion — Pipeline Limitations and Rationale
+
+This stage of the project primarily focuses on establishing a fully functional end-to-end pipeline, rather than optimizing ultimate detection performance.
+The manual-threshold segmentation (fixed at 128) successfully isolates bright defect pixels while preserving the circular wafer geometry, serving as a transparent and interpretable baseline.
+However, several inherent limitations remain:
+
+Low-contrast defects — When defect brightness is close to the wafer background, they are often missed because a single global threshold lacks sensitivity.
+
+Uneven illumination — Bright or dark regions may lead to false positives or false negatives, since the current method does not adapt to local intensity variation.
+
+Structural patterns — Continuous defects such as rings or scratches may be fragmented, as global thresholding is not geometry-aware.
+
+Noise and minor artifacts — Isolated bright pixels can be incorrectly detected as defects without post-processing or morphological filtering.
+
+Limited generalization — The method performs reliably only under uniform lighting and clearly defined contrast conditions, which may not hold for real-world manufacturing data.
+
+Despite these shortcomings, this baseline is valuable because it verifies the data-processing flow, enables quantitative feature extraction, and provides a benchmark for future enhancement.
+Subsequent stages will incorporate more advanced techniques—such as Gabor-wavelet texture descriptors and self-supervised DINOv3 embeddings—to overcome the above weaknesses and achieve robust, semantically meaningful defect detection.
+
+
+
 
 This project will be completed individually.
 
