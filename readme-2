@@ -1,6 +1,23 @@
 Semester Project: Unsupervised Anomaly Detection for Semiconductor Wafer Maps
 This project adopts a representation learning approach, in which both classical, hand-crafted features and learned deep representations are explored to capture the underlying structural patterns of wafer maps. Instead of relying on predefined defect labels, the system learns the intrinsic structure of normal wafers and detects deviations that indicate abnormal production conditions.
 The project is completed individually.
+
+Pipelines：
+Wafer Map Dataset
+        ↓
+Data Cleaning & Organization
+        ↓
+Image Preprocessing & Segmentation
+        ↓
+Classical Feature Extraction + Deep Representation Learning
+        ↓
+Embedding Space Construction
+        ↓
+Unsupervised Anomaly Detection
+        ↓
+Evaluation & Interpretation
+        ↺ (Iterative refinement)
+
 ---------------------------------------------------------------------------------------------------------------------------
 ===================================== Part 1 — High-level Solution Design ===================================================
 Problem Overview
