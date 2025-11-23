@@ -1,0 +1,186 @@
+Semester Project: Unsupervised Anomaly Detection for Semiconductor Wafer Maps
+This project adopts a representation learning approach, in which both classical, hand-crafted features and learned deep representations are explored to capture the underlying structural patterns of wafer maps. Instead of relying on predefined defect labels, the system learns the intrinsic structure of normal wafers and detects deviations that indicate abnormal production conditions.
+The project is completed individually.
+---------------------------------------------------------------------------------------------------------------------------
+===================================== Part 1 — High-level Solution Design ===================================================
+Problem Overview
+In semiconductor manufacturing, unknown and novel defect patterns can appear at any time due to shifts in process conditions, equipment malfunction, or environmental instability. Traditional supervised approaches often fail in such situations because they rely on previously observed defect classes.
+This project addresses the problem of unsupervised anomaly detection in wafer maps, where the objective is to automatically discover previously unseen structural abnormalities.
+Importantly, this is not a traditional object detection task in traditional computer vision content (e.g. detecting cars, faces, or people in images). Instead, it is a structural anomaly detection problem, where the “object” of interest is the overall pattern of a wafer and how it deviates from normal manufacturing patterns.
+---------------------------------------------------------------------------------------------------------------------------
+High-Level Approach
+The proposed system learns the underlying structure of normal wafer maps and identifies anomalies in feature space. The solution is guided by three key questions:
+1.	What characteristics define a normal wafer?
+2.	How can these characteristics be represented numerically?
+3.	How can deviations from these representations be detected automatically?
+To address this, the system leverages both classical computer vision features and deep self-supervised embeddings, enabling both interpretability and expressive power.
+---------------------------------------------------------------------------------------------------------------------------
+Feature Requirements
+The solution focuses on capturing the following structural properties:
+•	Structural symmetry and regularity patterns
+•	Spatial distribution of defects
+•	Texture consistency
+•	Geometric shape descriptors
+---------------------------------------------------------------------------------------------------------------------------
+Invariance Properties
+The model is designed to be agnostic to:
+•	Minor brightness / contrast variations
+•	Small rotations and translations
+•	Illumination changes
+These invariances ensure that the model focuses only on true structural abnormalities, rather than irrelevant visual noise.
+---------------------------------------------------------------------------------------------------------------------------
+Technical Direction
+A representation learning framework is used, including:
+•	Handcrafted statistical and morphological features
+•	Self-supervised deep embeddings (Vision Transformer / DINO-style representations)
+•	Unsupervised anomaly detection methods (e.g. Isolation Forest, reconstruction-based models)
+The primary objective is maximizing recall, i.e. minimizing the risk of missing abnormal wafers, even at the cost of a higher false positive rate.
+This project continuously applies concepts from this course such as feature extraction, invariance, image segmentation, representation learning, and anomaly detection.
+---------------------------------------------------------------------------------------------------------------------------
+===================================== Part 2 — Data Acquisition & Description ============================================ 
+Dataset Source
+WM-811K Wafer Map Dataset
+Download link:
+https://www.kaggle.com/datasets/qingyi/wm811k-wafer-map
+This dataset contains over 800,000 wafer maps collected from real semiconductor manufacturing lines.
+---------------------------------------------------------------------------------------------------------------------------
+Dataset Structure
+Each data point contains:
+•	waferMap: 2D array representing wafer yield
+•	dieSize: number of dies on wafer
+•	lotName: manufacturing batch ID
+•	waferIndex: index within the lot
+•	trianTestLabel: original split label
+•	failureType: defect category
+---------------------------------------------------------------------------------------------------------------------------
+Defect Type Distribution (9 categories)
+Defect Type	Sample Count	Proportion
+Normal (none)	147,431	 85.2%
+Edge-Ring	    9,680	   5.6%
+Edge-Loc	    5,189	   3.0%
+Center	      4,294	   2.5%
+Loc	          3,593	   2.1%
+Scratch	      1,193	   0.7%
+Random	      866	     0.5%
+Donut	        555	     0.3%
+Near-full	    149	     0.1%
+The dataset is highly imbalanced, which realistically reflects industrial conditions.
+---------------------------------------------------------------------------------------------------------------------------
+Resolution Distribution
+Most common resolutions include:
+32 × 29 pixels — 108,687 samples
+25 × 27 pixels — 64,083 samples
+49 × 39 pixels — 39,323 samples
+26 × 26 pixels — 30,078 samples
+30 × 34 pixels — 29,513 samples
+The images are digitally generated wafer yield maps (not camera images); therefore, lighting conditions and sensors do not apply.
+---------------------------------------------------------------------------------------------------------------------------
+Data Cleaning
+After removing missing or invalid labels:
+Final dataset size: 172,950 samples
+All samples contain valid defect labels
+---------------------------------------------------------------------------------------------------------------------------
+Dataset Splits
+Supervised split (60 % / 20 % / 20 %)
+•	Training: 103,770
+•	Validation: 34,590
+•	Test: 34,590
+Each subset preserves identical class proportions.
+Unsupervised anomaly detection split
+•	Training (only “Normal”): 88,459
+•	Validation (all types): 34,590
+•	Test (all types): 34,590
+These datasets are saved locally as:
+•	train_unsupervised.pkl
+•	val_unsupervised.pkl
+•	test_unsupervised.pkl
+By submitting this report, I confirm that I have physically downloaded, processed, and stored the data locally.
+---------------------------------------------------------------------------------------------------------------------------
+Train vs Validation Differences (Project-Relevant)
+Aspect	Training	Validation
+Composition	Normal only (unsupervised)	All defect types
+Purpose	Learn baseline structure	Generalization check
+Usage	Model fitting	Overfitting control
+This difference is essential for ensuring a realistic and reliable evaluation.
+
+===================================== Part 3 — Preprocessing, Segmentation & Feature Extraction ===================================== 
+Methods Applied
+1.	Legacy data conversion: .pki → modern format (joblib)
+2.	Label cleaning and flattening
+3.	Image normalization (min-max + uint8 scaling)
+4.	Threshold segmentation (manual threshold)
+5.	Morphological analysis
+6.	Classical feature extraction (14-dimensional vector)
+7.	Deep embedding extraction (Vision Transformer / DINO-style)
+---------------------------------------------------------------------------------------------------------------------------
+Justification for These Methods
+Why not Otsu?
+Otsu’s method assumes a bimodal pixel distribution. Wafer maps, however, exhibit near-uniform brightness, which caused full-wafer misclassification during testing. Therefore, Otsu’s method was rejected.
+Why threshold = 128?
+Empirically tested values:
+Threshold	Result
+100	Over-segmentation (wafer disappears)
+150	Under-segmentation (detail lost)
+128	√Best structural balance
+Hashing this value allowed defect regions to be preserved while maintaining wafer shape.
+---------------------------------------------------------------------------------------------------------------------------
+Classical Features Extracted (14 total)
+Intensity
+1.	Defect ratio
+2.	Mean intensity
+3.	Standard deviation
+Morphological
+4. Number of regions
+5. Average region size
+6. Maximum region size
+Spatial
+7. Centroid X
+8. Centroid Y
+9. Radial mean
+10. Radial std
+11. Edge ratio
+Structural
+12. Left-right symmetry
+13. Top-bottom symmetry
+Texture
+14. Edge density (Canny)
+These features directly correspond to industrial failure patterns such as edge defects, center clusters, scratches, and scattered anomalies.
+---------------------------------------------------------------------------------------------------------------------------
+Feature Engineering Strategy: From Classical Features to Deep Representations
+Rather than treating classical features and deep learning as competing approaches, this project adopts a multi-stage representation learning strategy.
+In the first stage, handcrafted features were constructed to:
+•	Capture interpretable structural patterns (symmetry, distribution, morphology)
+•	Establish a physically meaningful baseline
+•	Enable fast and stable pipeline validation
+•	Serve as a reference for deeper embeddings
+In the second stage, the project was extended to include self-supervised deep embeddings (DINO / Vision Transformer), which capture higher-level structural abstractions beyond manual features.
+This enables a direct comparison between:
+•	Human-designed classical features
+•	Automatically learned deep representations
+and strengthens the scientific rigor and scalability of the solution.
+---------------------------------------------------------------------------------------------------------------------------
+Example Processing Results
+Sample tests on 1,000 wafers show:
+•	Defect ratio range: 0.001 – 0.191
+•	Connected regions: 1 – 66
+•	Meaningful variations in symmetry and spatial distribution
+These results validate the stability of the preprocessing and feature extraction pipeline.
+---------------------------------------------------------------------------------------------------------------------------
+How to Run the Code
+pip install numpy pandas matplotlib opencv-python scikit-learn joblib
+jupyter notebook wafer-part-3-update.ipynb
+Outputs:
+•	Clean datasets
+•	Feature matrices
+•	Segmentation visualizations
+•	Deep embeddings
+---------------------------------------------------------------------------------------------------------------------------
+Individual Contribution
+This project was completed individually. All tasks below were performed solely by me:
+•	Data acquisition
+•	Cleaning and preprocessing
+•	Segmentation design
+•	Feature engineering
+•	Deep embedding extraction
+•	Documentation and reporting
+
