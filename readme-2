@@ -43,6 +43,22 @@ WM-811K Wafer Map Dataset
 Download link:
 https://www.kaggle.com/datasets/qingyi/wm811k-wafer-map
 This dataset contains over 800,000 wafer maps collected from real semiconductor manufacturing lines.
+Industrial Data Outreach (In Progress)
+To further validate the proposed solution under realistic industrial conditions, I have initiated contact with the University of Notre Dame's NDnano facility.
+
+November 17, 2024: Received response from NDnano regarding potential data collaboration.
+
+Data Types Discussed:
+
+AOI tile-level images: High-resolution, raw optical scan patches of the wafer surface, containing fine-grained texture details.
+
+Wafer-level maps: Lower-resolution, summary maps (similar to WM-811K) that represent the overall yield pattern of an entire wafer.
+
+Current Status: We are actively following up to secure either dataset, despite the typical extended response timelines in such industrial-academic collaborations.
+
+Technical Consideration: Acknowledged the sensitivity around potential reverse-engineering of process parameters, which makes wafer-level maps a more likely candidate.
+
+This outreach aims to bridge the gap between academic benchmarks and real-world semiconductor fabrication environments.
 ---------------------------------------------------------------------------------------------------------------------------
 Dataset Structure
 Each data point contains:
