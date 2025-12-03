@@ -275,8 +275,11 @@ Test example output:
 <img width="3600" height="5400" alt="kmeans_cluster_6" src="https://github.com/user-attachments/assets/0af0febd-a749-457c-b528-dbc70d6bab8e" />
 <img width="3600" height="5400" alt="kmeans_cluster_7" src="https://github.com/user-attachments/assets/fda2580c-2c04-4ef8-afef-a2c52df8898b" />
 <img width="3600" height="5400" alt="kmeans_cluster_8" src="https://github.com/user-attachments/assets/d871ea1c-6f5e-4be4-89c1-a0f878f3b145" />
-<img width="3600" height="5400" alt="kmeans_cluster_8" src="https://github.com/user-attachments/assets/68c826c6-781c-4704-86f0-4e0e15eb4fd2" />
 <img width="3600" height="5400" alt="kmeans_cluster_9" src="https://github.com/user-attachments/assets/9fa22a4e-bfca-4a7c-89b2-03f3b9fa8092" />
+
+
+<img width="2400" height="1800" alt="kmeans_calinski_vs_k" src="https://github.com/user-attachments/assets/ef788818-5989-4336-b696-9293cb0357b8" />
+<img width="2400" height="1800" alt="kmeans_silhouette_vs_k" src="https://github.com/user-attachments/assets/aaec5b88-6f2b-4981-9980-99a9f4af11b0" />
 
 
 
