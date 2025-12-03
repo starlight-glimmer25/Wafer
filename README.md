@@ -177,6 +177,89 @@ features_df.csv (or DataFrame): contains 12 extracted features per wafer sample.
 
 Visualization outputs (matplotlib plots): original wafer and defect overlay in soft pink/green colors.
 
+--------------------Dec.3 rd Updated-Part 4: Final Report (Unsupervised Clustering Pipeline)---------------------------
+4.1 Overview and Motivation
+Our goal in this project is to explore wafer map anomaly patterns using an unsupervised pipeline. Since the dataset contains many uncertain or transitional states, and since a large portion of samples do not have reliable labels, a direct supervised classifier would not be appropriate. For the same reason, methods like (one-class) SVM are also not suitable here. In this dataset, it is extremely hard to define a consistent and 100% reliable , "normal" region or decide which wafers should be treated as clean references. Many samples fall into gray areas, and any decision about what counts as "normal" or "abnormal" would be very subjective. Instead, we focus on learning meaningful representations and grouping wafers by visual similarity.
+To do this, we build a pipeline based on DINO ViT (S-14) embeddings, dimensionality reduction, and clustering. The final output is a set of clusters that reflect structural patterns across the dataset.
+4.2 Choice of Representation and Clustering Method
+Why we chose DINO ViT
+We selected the DINO ViT-S/14 (384-dimensional) vision transformer for feature extraction. There are a few reasons for this choice:
+1.	Self-attention structure – ViT models are good at capturing global relationships across the wafer map, which is important for understanding holistic defect shapes and spatial patterns.
+2.	Lower dimensional backbone is enough – DINO is trained on natural images, which have far more visual variability than wafer maps. Our dataset is significantly more structured and homogeneous, so a smaller embedding size (384) is not only sufficient but also helps avoid unnecessary model complexity and reduces the risk of overfitting. Stable and expressive embeddings – Even without fine-tuning, DINO produces embeddings that already separate wafers with different high-level patterns.
+Overall, DINO provides a strong and consistent representation, especially compared to our earlier autoencoder baseline.
+Why PCA + UMAP
+Wafer embeddings live in a high-dimensional space, but from our earlier experiments (handcrafted features and autoencoder latent space), we already had some intuition that the actual data structure is low-dimensional. PCA confirmed this: only the first ~10–15 principal components explain most of the variance (80%).
+Therefore, after L2 normalization, we apply:
+(1)	PCA – reduces noise and keeps global structure
+(2)	UMAP – captures local neighborhood relations and gives an interpretable 2D/3D manifold
+This combination gives us a clearer view of the dataset and helps clustering algorithms behave more reliably.
+Why K-Means and HDBSCAN
+We experimented with two clustering approaches:
+HDBSCAN
+HDBSCAN naturally pairs well with UMAP, and it automatically discovers cluster shapes without requiring a fixed k.
+However, in practice, the performance was inconsistent, possibly due to parameter sensitivity or instability in noisy regions of the dataset.
+K-Means
+Our initial plan was to use Spherical K-Means, because cosine similarity matches the geometry of DINO embeddings. Unfortunately, the Python spherical K-Means package is no longer maintained, several versions are incompatible with newer environments, and CRC's environment made multiple installation risky. (We will continue to refine and improve this aspect moving forward.) So we switched to the standard K-Means implementation. To partially compensate, we apply L2 normalization before clustering, so Euclidean distance becomes aligned with cosine similarity.
+4.3 Evaluation on Training and Validation Sets
+Since this is an unsupervised task, we evaluate cluster quality using internal metrics instead of accuracy.
+Quantitative Results:
+HDBSCAN achieved a silhouette score of 0.275 and a Calinski–Harabasz index of 1022.808, but it only found 2 clusters (excluding noise), which is too coarse for our goal of discovering nuanced defect patterns. After further analysis, we believe this behavior likely stems from the choice of parameters as well as the presence of substantial continuous or transitional states within the dataset. These issues will be examined in detail and addressed in future algorithmic improvements.
+K-Means with K=10 achieved a silhouette score of 0.116 and a Calinski–Harabasz index of 8263.433, with 10 clusters. While the silhouette score is lower than HDBSCAN's, the Calinski–Harabasz index is much higher, indicating better between-cluster separation.
+We performed a grid search over K values from 5 to 20 for K-Means. The results show that the optimal K in terms of silhouette score is 5 (0.1326), but we chose K=10 to capture more granular patterns, as the Calinski–Harabasz index remains high. The complete K scan results are:
+K=5: silhouette=0.1326, Calinski–Harabasz=12226.69
+K=6: silhouette=0.1237, Calinski–Harabasz=11243.54
+K=7: silhouette=0.1135, Calinski–Harabasz=10233.53
+K=8: silhouette=0.1151, Calinski–Harabasz=9459.75
+K=9: silhouette=0.1191, Calinski–Harabasz=8791.81
+K=10: silhouette=0.1163, Calinski–Harabasz=8263.43
+K=11: silhouette=0.1178, Calinski–Harabasz=7835.41
+K=12: silhouette=0.1138, Calinski–Harabasz=7415.77
+K=13: silhouette=0.1127, Calinski–Harabasz=7024.21
+K=14: silhouette=0.1033, Calinski–Harabasz=6667.07
+K=15: silhouette=0.1079, Calinski–Harabasz=6371.15
+K=16: silhouette=0.1074, Calinski–Harabasz=6125.10
+K=17: silhouette=0.1092, Calinski–Harabasz=5892.29
+K=18: silhouette=0.1007, Calinski–Harabasz=5695.39
+K=19: silhouette=0.0968, Calinski–Harabasz=5494.37
+K=20: silhouette=0.0988, Calinski–Harabasz=5333.73
+We also compared the cluster structure between the training portion and a separate validation subset. The validation manifold shows similar overall shapes but with more mixed or noisy regions, which is expected given the transitional states present in the dataset.
+4.4 Observations and Commentary
+Data characteristics
+The wafer dataset is challenging for several reasons:
+1.	Long-tail distribution – some defect types are extremely rare, while the majority of samples fall into ambiguous or unlabeled categories.
+2.	Many transitional or hybrid states – lots of wafers show partial defects or noisy patterns that do not cleanly belong to a single category.
+3.	Real-world messy data – this dataset reflects actual manufacturing behavior, so patterns are not cleanly separated.
+Cluster behavior
+1.	K-Means tends to draw arbitrary boundaries in unclear regions. Some clusters represent true patterns, while others split what should be a single "mixed-type" region.
+2.	Embedding quality is good, but difficult samples still create overlapping areas in the manifold.
+3.	Due to environment constraints, we were not able to generate attention visualizations from DINO, which might have helped with interpretability. If time allows, we plan to add these later.
+The KMeans clustering (K=10) reveals ten groups that, while not perfectly separable, still exhibit somewhat observable visual tendencies. These tendencies mostly reflect differences in defect density, spatial uniformity, and subtle directional or radial structure rather than strongly defined anomaly types. This is consistent with the nature of the WM-811K "none" class, where many wafers exist in mixed states and do not present clean textbook failure patterns.
+Cluster 0 consists of wafers with low-density, evenly scattered defects. They show no directional or radial bias and likely represent baseline noise.
+Cluster 1 shows slightly stronger activity near one side of the edge, resembling a very weak partial-edge signature.
+Cluster 2 maintains random scatter but with a noticeably higher density than Cluster 0, forming a "medium-density random" category.
+Cluster 3 continues this trend with even heavier global scatter, forming a dense, snow-like texture across the wafer.
+Cluster 4 exhibits a soft degree of center concentration—still scattered, but with a mild center-weighted tendency.
+Cluster 5 contains wafers with medium-to-high density and occasional local patches of elevated activity. Although not forming a coherent pattern, these patches introduce mild regional structure.
+Cluster 6 is visually smoother and directionally more uniform, representing a transitional group between low-density and moderate-density random wafers.
+Cluster 7 includes wafers with slight anisotropy or oval-like spatial distortion. Some samples show weak directional stretching, which DINO embeddings are particularly sensitive to.
+Cluster 8 contains high-density wafers that sometimes display short bursts of regional overkill. These subtle high-intensity areas differentiate them from the more uniformly dense Cluster 3.
+Cluster 9 is characterized by mid-range defect counts combined with a high amount of random black pixel noise. The absence of directional or spatial concentration suggests that this group captures wafers influenced by distributed, low-specificity defect mechanisms rather than systematic structural faults.
+Overall, the clusters demonstrate a smooth continuum rather than sharp boundaries. Many clusters primarily differ by defect intensity rather than specific shape, while others reflect more localized or directional tendencies. This distribution supports the interpretation that the dataset contains a large number of mixed states, and that unsupervised clustering on DINO embeddings naturally organizes wafers along gradients of density and subtle structural cues rather than well-defined anomaly categories. The presence of weak but consistent tendencies across clusters indicates that the embedding model successfully captures meaningful spatial information despite the inherently noisy and heterogeneous nature of the data.
+4.5 Ideas for Improvement
+There are several directions to improve this pipeline:
+1.	Use flow-based models (normalizing flows): Because flows learn an invertible mapping between the embedding space and a simple Gaussian density, they can reshape a complex high-dimensional manifold into a more regular and separable form. This reversible transformation effectively straightens tangled structures in the embedding geometry, improving cluster separability. Moreover, since flows model an explicit likelihood, they also provide probabilistic diagnostics for detecting low-density or anomalous regions in the embedding space.(And probably with GMM).
+2.	Move back toward cosine-based clustering: If environment constraints are resolved, implementing spherical K-Means or another cosine-aligned method or probability-based algorithms (kernal PCA; Spectral Clustering/Hierarchical Clustering) could improve performance, since direction matters more than magnitude in our dataset.
+3.	Feature fusion: Combining DINO embeddings with our earlier handcrafted features—or using fuzzy logic to estimate each defect's probability—could help resolve ambiguous cases with specific domain knowledge as proofs.
+One small improvement before final testing
+A simple and practical improvement would be: Adjusting UMAP hyperparameters (e.g., lowering n_neighbors) to preserve more local structure and potentially increase cluster separability. This is easy to implement and may yield a noticeable gain.
+4.6 Runnable Code and Test Example Output
+How to run the code:
+The complete pipeline is implemented in a single Python script. To run it, execute the following command in the CRC terminal with submit file:
+python wafer_clustering_pipeline.py
+The script will load the DINO embeddings, apply L2 normalization, perform PCA and UMAP dimensionality reduction, run both HDBSCAN and K-Means clustering, and generate visualizations and metrics. All results will be saved to the directory specified in the script.
+Test example output:
+ 
+
 
 
 This project will be completed individually.
