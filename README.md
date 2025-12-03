@@ -181,6 +181,7 @@ Visualization outputs (matplotlib plots): original wafer and defect overlay in s
 4.1 Overview and Motivation
 Our goal in this project is to explore wafer map anomaly patterns using an unsupervised pipeline. Since the dataset contains many uncertain or transitional states, and since a large portion of samples do not have reliable labels, a direct supervised classifier would not be appropriate. For the same reason, methods like (one-class) SVM are also not suitable here. In this dataset, it is extremely hard to define a consistent and 100% reliable , "normal" region or decide which wafers should be treated as clean references. Many samples fall into gray areas, and any decision about what counts as "normal" or "abnormal" would be very subjective. Instead, we focus on learning meaningful representations and grouping wafers by visual similarity.
 To do this, we build a pipeline based on DINO ViT (S-14) embeddings, dimensionality reduction, and clustering. The final output is a set of clusters that reflect structural patterns across the dataset.
+
 4.2 Choice of Representation and Clustering Method
 Why we chose DINO ViT
 We selected the DINO ViT-S/14 (384-dimensional) vision transformer for feature extraction. There are a few reasons for this choice:
@@ -223,6 +224,7 @@ K=18: silhouette=0.1007, Calinski–Harabasz=5695.39
 K=19: silhouette=0.0968, Calinski–Harabasz=5494.37
 K=20: silhouette=0.0988, Calinski–Harabasz=5333.73
 We also compared the cluster structure between the training portion and a separate validation subset. The validation manifold shows similar overall shapes but with more mixed or noisy regions, which is expected given the transitional states present in the dataset.
+
 4.4 Observations and Commentary
 Data characteristics
 The wafer dataset is challenging for several reasons:
@@ -245,6 +247,7 @@ Cluster 7 includes wafers with slight anisotropy or oval-like spatial distortion
 Cluster 8 contains high-density wafers that sometimes display short bursts of regional overkill. These subtle high-intensity areas differentiate them from the more uniformly dense Cluster 3.
 Cluster 9 is characterized by mid-range defect counts combined with a high amount of random black pixel noise. The absence of directional or spatial concentration suggests that this group captures wafers influenced by distributed, low-specificity defect mechanisms rather than systematic structural faults.
 Overall, the clusters demonstrate a smooth continuum rather than sharp boundaries. Many clusters primarily differ by defect intensity rather than specific shape, while others reflect more localized or directional tendencies. This distribution supports the interpretation that the dataset contains a large number of mixed states, and that unsupervised clustering on DINO embeddings naturally organizes wafers along gradients of density and subtle structural cues rather than well-defined anomaly categories. The presence of weak but consistent tendencies across clusters indicates that the embedding model successfully captures meaningful spatial information despite the inherently noisy and heterogeneous nature of the data.
+
 4.5 Ideas for Improvement
 There are several directions to improve this pipeline:
 1.	Use flow-based models (normalizing flows): Because flows learn an invertible mapping between the embedding space and a simple Gaussian density, they can reshape a complex high-dimensional manifold into a more regular and separable form. This reversible transformation effectively straightens tangled structures in the embedding geometry, improving cluster separability. Moreover, since flows model an explicit likelihood, they also provide probabilistic diagnostics for detecting low-density or anomalous regions in the embedding space.(And probably with GMM).
@@ -252,13 +255,31 @@ There are several directions to improve this pipeline:
 3.	Feature fusion: Combining DINO embeddings with our earlier handcrafted features—or using fuzzy logic to estimate each defect's probability—could help resolve ambiguous cases with specific domain knowledge as proofs.
 One small improvement before final testing
 A simple and practical improvement would be: Adjusting UMAP hyperparameters (e.g., lowering n_neighbors) to preserve more local structure and potentially increase cluster separability. This is easy to implement and may yield a noticeable gain.
+
 4.6 Runnable Code and Test Example Output
 How to run the code:
 The complete pipeline is implemented in a single Python script. To run it, execute the following command in the CRC terminal with submit file:
 python wafer_clustering_pipeline.py
 The script will load the DINO embeddings, apply L2 normalization, perform PCA and UMAP dimensionality reduction, run both HDBSCAN and K-Means clustering, and generate visualizations and metrics. All results will be saved to the directory specified in the script.
 Test example output:
- 
+ <img width="2400" height="1800" alt="umap_kmeans" src="https://github.com/user-attachments/assets/1c9c8eb3-a742-4b68-b9b4-357f8a1aca71" />
+
+<img width="2400" height="1800" alt="umap_hdbscan" src="https://github.com/user-attachments/assets/8b96b2ae-e6f4-426b-b87d-7c157a431143" />
+
+<img width="3600" height="5400" alt="kmeans_cluster_0" src="https://github.com/user-attachments/assets/4259f441-7eb1-4832-b170-c0058c6b4938" />
+<img width="3600" height="5400" alt="kmeans_cluster_1" src="https://github.com/user-attachments/assets/868a862c-a6ac-46f6-9f77-50a4051a4e58" />
+<img width="3600" height="5400" alt="kmeans_cluster_2" src="https://github.com/user-attachments/assets/7e741ed5-67b2-4729-881f-1f9b8c06ea52" />
+<img width="3600" height="5400" alt="kmeans_cluster_3" src="https://github.com/user-attachments/assets/88fe0bbb-c33f-461d-a014-4fd25d14f7bc" />
+<img width="3600" height="5400" alt="kmeans_cluster_4" src="https://github.com/user-attachments/assets/73ca156c-4fc5-4e11-a1da-424596aaf953" />
+<img width="3600" height="5400" alt="kmeans_cluster_5" src="https://github.com/user-attachments/assets/a38690a6-f67b-416e-b7d3-16aeeaf8cbe6" />
+<img width="3600" height="5400" alt="kmeans_cluster_6" src="https://github.com/user-attachments/assets/0af0febd-a749-457c-b528-dbc70d6bab8e" />
+<img width="3600" height="5400" alt="kmeans_cluster_7" src="https://github.com/user-attachments/assets/fda2580c-2c04-4ef8-afef-a2c52df8898b" />
+<img width="3600" height="5400" alt="kmeans_cluster_8" src="https://github.com/user-attachments/assets/d871ea1c-6f5e-4be4-89c1-a0f878f3b145" />
+<img width="3600" height="5400" alt="kmeans_cluster_8" src="https://github.com/user-attachments/assets/68c826c6-781c-4704-86f0-4e0e15eb4fd2" />
+<img width="3600" height="5400" alt="kmeans_cluster_9" src="https://github.com/user-attachments/assets/9fa22a4e-bfca-4a7c-89b2-03f3b9fa8092" />
+
+
+
 
 
 
