@@ -1,5 +1,5 @@
 ## Part 1: Problem Overview
-
+1.1 Introduction
 This project focuses on developing an unsupervised anomaly detection system for semiconductor wafer maps. In the semiconductor industry, even minor undetected defects on wafers can result in severe yield loss, especially when the issue is only discovered after dozens or even hundreds of wafers have already been manufactured and discarded. 
 
 While existing research, such as supervised CNN-based classification models (e.g., by Stanford teams), have shown strong performance in controlled environments, they often fail in real-world industrial use cases when confronted with novel, 'zero-shot' defect types not present in the training data.. This is primarily because real-world manufacturing defects are frequently novel or previously unseen, making supervised methods less effective due to the lack of labeled examples for rare anomalies.
@@ -8,7 +8,7 @@ Our goal is to design a system that can leverage patterns from known “good” 
 
 This project is directly inspired by my firsthand experience with yield loss challenges during my tenure as a Manufacturing Quality Engineer at TSMC. It aims to bridge the gap between academic research and industrial application by developing a practical solution for early detection of novel defects.It not only fulfills the course requirement but also provides a valuable opportunity to build a research-grade project that may enhance my resume and career prospects. If the work yields meaningful or novel results, I would also be interested in exploring publication opportunities in relevant industrial or computer vision venues.
 
-Part 2: Proposed High-Level Solution 
+1.2 Proposed High-Level Solution 
 
 This project aims to build an unsupervised anomaly detection system for semiconductor wafer images. Unlike supervised learning, which focuses on classifying known defect types, our goal is to rely solely on normal samples, train the model to learn the structural patterns of normal wafers, and then identify images that deviate from these patterns as potential anomalies. This approach is tailored to the real-world industrial environment where unknown defects are frequent but labels are scarce.
 
@@ -23,23 +23,77 @@ The output of this system may include: (1) an anomaly score for each image; (2) 
 In addition, we hope that the model has a certain degree of invariance: for example, it is insensitive to slight brightness changes, geometric rotations, or small translations of the image. This helps to reduce false positives and allows the model to focus on anomalies that are truly structurally destructive rather than triggering alarms due to irrelevant disturbances.
 
 [Current statement] : Since this project is still in the exploratory stage, the specific model structure, feature extraction method, anomaly score calculation mechanism, and final output form are still under investigation and may be dynamically adjusted based on actual results. We will also continue to evaluate the degree of match between existing public datasets (such as WM-811K) and real industrial scenarios, and consider supplementing other data or fine-tuning the objectives when necessary.
-Part 3 Datasets
-The primary dataset planned for this project is the WM-811K Wafer Map dataset, a publicly available benchmark dataset commonly used in semiconductor defect detection research. It consists of over 800,000 wafer map images, most of which are labeled as “normal,” along with a limited number of samples across several defect categories such as edge-loc, center, donut, scratch, and others. The images are grayscale with relatively low resolution (typically 28×28 pixels), which mimics real-world data constraints in terms of compactness and low storage cost.
 
-Given the industrial motivation of this project, the training set will primarily consist of normal wafers only, enabling the model to learn the structure and distribution of healthy patterns. The validation set may include both normal samples and a small subset of defect cases to support threshold tuning and parameter selection. The test set will include a broader mix of defect types—including some classes not seen during training—to evaluate the model’s generalization capability in detecting novel anomalies.
+------------------------------Part 2: Data Collection and Description--------------------------------------------------
+2.1 Data Source
+Dataset: WM-811K Wafer Map Dataset
+Download Link: https://www.kaggle.com/datasets/qingyi/wm811k-wafer-map (Primary source)
 
-One notable challenge of this dataset is the high imbalance between normal and defective samples, which reflects real-world distributions but also increases the risk of bias toward over-generalizing “normal” patterns. Furthermore, some defect categories exhibit very subtle visual cues, requiring the model to learn highly sensitive structural representations to distinguish them. Preprocessing steps such as normalization, potential resizing, and possibly grayscale binarization will be considered to reduce irrelevant noise and enhance structural contrast.
+Associated Paper:
+The WM-811K dataset is prominently featured and analyzed in the following foundational research paper:
+Wu, M.-J., Jang, J.-S. R., & Chen, J.-L. (2015). Wafer Map Failure Pattern Recognition and Similarity Ranking for Large-Scale Data Sets. IEEE Transactions on Semiconductor Manufacturing, 28(1), 1–12.
 
-In addition to using WM-811K, I plan to reach out to real-world industry partners or internal university research labs to explore access to authentic wafer data. If granted, such datasets would serve not only to validate the proposed model in a realistic deployment scenario, but also potentially allow for experimental deployment or feedback from domain experts. The overarching goal is to develop a solution that is not only academically valid, but also practically viable in high-precision industrial environments.
------------------------------------------0929 Update---------------------------------------------------
-Part 4: Feature & Invariance Considerations
-Our model aims to detect structural anomalies in wafer maps, such as symmetry breaks, irregular patterns, or local pixel disruptions. These features are more meaningful than raw pixel values and better reflect actual production defects.
-At the same time, the model should be robust to irrelevant variations like minor changes in brightness, slight rotations, or small shifts. These factors are common in real-world data and should not trigger false alarms.
-We prioritize high sensitivity to subtle defects while maintaining invariance to uninformative noise, ensuring the model can detect real problems without overreacting to harmless variation.
+2.2 Dataset Splits
+Given the industrial motivation and unsupervised nature of this project, the dataset is split as follows:
 
+Training Set: 60% (103,770 samples) - Used for feature extraction and clustering algorithm development.
+
+Validation Set: 20% (34,590 samples) - Used for parameter tuning and intermediate evaluation of clustering stability.
+
+Test Set: 20% (34,590 samples) - Reserved for final evaluation and not used during development phases.
+
+The stratified split ensures that each subset maintains the same proportion of "none" class samples (approximately 80%) and defect category distributions as the original dataset, providing representative samples for each phase of the project.
+Important Differences Between Training and Validation Subsets
+
+From the project perspective, key differences include:
+
+Purpose: Training set drives unsupervised pattern discovery; validation set tests generalization of discovered patterns and supports hyperparameter tuning.
+
+Defect Representation: Validation set contains a controlled proportion of defects to evaluate anomaly detection performance, while training set is dominated by normal samples to learn normal pattern distribution.
+
+Evaluation Focus: Training evaluation focuses on clustering quality; validation evaluation tests stability with unseen data.
+
+2.3 Data Statistics
+Total Samples: 172,950 wafer maps (correcting the initial 800,000 estimate - the WM-811K contains approximately 172,950 samples)
+
+Distinct Defect Categories: 9 + "none" class (Center, Donut, Edge-Loc, Edge-Ring, Loc, Random, Scratch, Near-full, None)
+
+2.4 Class Distribution:
+
+None (normal): ~80% (138,360 samples)
+
+Defect categories: 300-5,000 samples each (highly imbalanced)
+
+Sample Characterization
+Resolution: 256×256 pixels (after preprocessing; original images may vary but are normalized to this resolution)
+
+Data Type: Grayscale images, often binarized (0 = normal, 1 = defect) in practice
+
+Sensor: Optical inspection tools used in semiconductor manufacturing lines
+
+Illumination Wavelength: Not explicitly specified in dataset documentation, but typical wafer inspection systems use visible to ultraviolet light
+
+Ambient Conditions: Cleanroom environment (temperature/humidity controlled) as typical in semiconductor fabrication
+
+Manufacturing Context: Real-world production data with inherent noise and variability
+
+2.5 Data Quality and Challenges
+Class Imbalance: Severe imbalance with normal samples dominating (~80%), reflecting real-world distributions but increasing risk of bias.
+
+Label Uncertainty: The "none" class may contain unlabeled or subtle defects, requiring robust anomaly detection rather than supervised classification.
+
+Transitional States: Many samples exhibit mixed or ambiguous patterns, existing between clear defect categories.
+
+Subtle Defect Cues: Some defect categories exhibit very subtle visual cues, requiring highly sensitive structural representations.
+
+2.6 Additional Data Exploration
+In addition to using WM-811K, I have explored access to authentic wafer data through industry contacts and university research labs. If granted, such datasets would provide realistic deployment validation. However, for this project phase, WM-811K serves as the primary dataset.
+
+2.7 Data Acquisition Confirmation
+I have downloaded the complete WM-811K dataset and preprocessed it for our pipeline. All data is stored locally and ready for development.
 ---------------------------------------Part3---First Update----------------------------------------------
 Part 3: Data Preprocessing, Segmentation and Feature Extraction
-1. Data Preprocessing
+3.1. Data Preprocessing
 This project uses an open wafer map defect detection dataset, where each sample is a 2-D matrix and each pixel value corresponds to a chip region’s yield status.
 Preprocessing steps include:
 	Reading wafer maps from the DataFrame and converting them to NumPy arrays.
@@ -47,7 +101,7 @@ Preprocessing steps include:
 	Removing empty or invalid entries to ensure valid image data.
 These operations stabilize segmentation and standardize inputs for feature extraction.
 
-2. Image Segmentation
+3.2. Image Segmentation
 Two segmentation strategies were tested:
 (a) Otsu Adaptive Thresholding
 Otsu’s method computes a global threshold automatically, but performed poorly because the wafer images are brightness-uniform — it often classified the entire wafer as foreground, losing defect information.
@@ -58,7 +112,7 @@ A fixed threshold was applied and compared across values:
 	128 → best contrast and preserved circular structure.
 Thus, threshold = 128 was selected as the standard setting — efficient, interpretable, and CPU-friendly.
 
-3. Feature Extraction
+3.3 Feature Extraction
 We extracted twelve classical, interpretable features from each segmented wafer map. These features are designed to capture both spatial and structural properties of wafer defects in a way that does not rely on training or labeling, making them ideal for unsupervised or semi-supervised anomaly detection.
 
 (1) Defect ratio — the proportion of defective pixels relative to the total wafer area, representing the overall defect intensity.
@@ -83,20 +137,20 @@ In future phases, these classical descriptors can serve as a baseline for valida
 【Example Photo】<img width="1858" height="926" alt="image" src="https://github.com/user-attachments/assets/0b6eeb77-870f-4a1d-963c-d446380db4d6" />
 
 
-4. Methodology Justification
+3.4. Methodology Justification
 We adopted a traditional segmentation + feature pipeline because:
 	The goal is to build an interpretable, lightweight baseline before introducing deep models.
 	Classical methods are training-free, GPU-independent, and fast on CPUs.
 	Extracted features have direct physical meaning aligned with wafer defect morphology.
 
-5. Future Work and Optimization Directions
+3.5. Future Work and Optimization Directions
 (1) Integration of Gabor Wavelet Features
 Gabor filters are frequency- and orientation-selective kernels capable of capturing fine texture and directional patterns such as scratches or edge-rings. By building a multi-scale, multi-orientation Gabor filter bank and extracting energy-based statistics, we can add richer local descriptors to the current global statistical features. This extension would serve as a CPU-friendly short-term upgrade that enhances sensitivity to low-contrast directional defects.
 (2) High-Level Representation via DINOv3
 We also plan to apply DINOv3, a self-supervised vision transformer, to extract semantic embeddings from wafer images. Current hardware (Intel Arc GPU without CUDA) prevents local execution, but future GPU access on CRC clusters will allow testing. Comparing DINOv3 embeddings with classical and Gabor features will bridge interpretability and representation power.
 Together, these two paths outline a clear roadmap for enhancing this baseline pipeline from statistical to hybrid feature learning.
 
-6. Summary
+3.6. Summary
 The current stage completes a working pipeline from data preprocessing to segmentation and feature extraction. Manual threshold = 128 preserves wafer geometry while isolating defects, and the extracted features are well-suited for subsequent analysis.
 Future tasks will include GPU-based DINOv3 testing, Gabor feature integration, and clustering/classification experiments for automatic defect categorization.
 Additional Discussion — Pipeline Limitations and Rationale
@@ -177,7 +231,7 @@ features_df.csv (or DataFrame): contains 12 extracted features per wafer sample.
 
 Visualization outputs (matplotlib plots): original wafer and defect overlay in soft pink/green colors.
 
---------------------Dec.3 rd Updated-Part 4: Final Report (Unsupervised Clustering Pipeline)---------------------------
+--------------------Dec.3 rd Updated-Part 4: Final Report (Unsupervised Clustering Pipeline with Dino)---------------------------
 4.1 Overview and Motivation
 Our goal in this project is to explore wafer map anomaly patterns using an unsupervised pipeline. Since the dataset contains many uncertain or transitional states, and since a large portion of samples do not have reliable labels, a direct supervised classifier would not be appropriate. For the same reason, methods like (one-class) SVM are also not suitable here. In this dataset, it is extremely hard to define a consistent and 100% reliable , "normal" region or decide which wafers should be treated as clean references. Many samples fall into gray areas, and any decision about what counts as "normal" or "abnormal" would be very subjective. Instead, we focus on learning meaningful representations and grouping wafers by visual similarity.
 To do this, we build a pipeline based on DINO ViT (S-14) embeddings, dimensionality reduction, and clustering. The final output is a set of clusters that reflect structural patterns across the dataset.
