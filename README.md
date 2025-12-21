@@ -335,6 +335,90 @@ Test example output:
 <img width="2400" height="1800" alt="kmeans_calinski_vs_k" src="https://github.com/user-attachments/assets/ef788818-5989-4336-b696-9293cb0357b8" />
 <img width="2400" height="1800" alt="kmeans_silhouette_vs_k" src="https://github.com/user-attachments/assets/aaec5b88-6f2b-4981-9980-99a9f4af11b0" />
 
+----------------------【12.21 Update】 Part 5: Final Evaluation & Comprehensive Benchmark----------------------
+5.1. Test Database & Protocol (1 point)
+1. Scale & Isolation: The final test set consists of 34,590 samples (matching the size of the validation set). The test set corresponds to a 20% hold-out split of the full dataset. This data was kept strictly sequestered during the feature engineering and parameter tuning phases to ensure the integrity of the "unseen data" evaluation.
+   
+2. Pipeline Consistency: After the dataset was split into training, validation, and test subsets, we deliberately avoided accessing the test set during model development in order to preserve a strict unseen-data evaluation protocol. As a result, embeddings were initially generated only for the training and validation sets. The test embeddings were generated later using the same DINOv2 (ViT-S/14) model, identical preprocessing steps, and the same embedding extraction code, with the only change being the input file paths. No model parameters were updated during this process. This confirms that the observed performance reflects stable and generalizable representation learning rather than procedural variation or overfitting.
+
+5.2. Technical Evolution: From HDBSCAN to GMM (1 point)
+1. The Failure of Density-Based Clustering: We initially explored HDBSCAN due to its theoretical superiority in density modeling. However, the WM-811K dataset presented a "smooth slope" feature distribution rather than the discrete "peaks and valleys" required by HDBSCAN. Even after extensive and repeated hyperparameter tuning on the validation set, HDBSCAN could not yield stable clusters. The dataset's continuous transition states (high-entropy samples) violated the model's strong assumptions about discrete density peaks and valleys.
+   
+2. The GMM Advantage: Weighing the high computational complexity of Spectral Clustering, and the challenges of Manual Feature Fusion (requiring additional multi-dimensional quantitative features with uncertain redundancy and duplication), we were fortunate to discover and successfully validate a Gaussian Mixture Model (GMM), which delivered surprisingly strong performance. GMM’s ability to perform soft clustering and probabilistic density estimation perfectly aligns with the overlapping nature of wafer defect distributions.These metrics evaluate ranking quality rather than strict class prediction.
+
+5.3. Performance Comparison & Methodology (3 points)
+1. Summary & Comparison with Kmeans in Part4 : Compared to the previously tested KMeans approach, which primarily captures defect density and relies on relatively arbitrary and rigid cluster boundaries, the GMM provides a softer partition of the data along with explicit confidence estimates. This probabilistic formulation allows samples near cluster boundaries or in transitional states to be represented more naturally, rather than being forced into hard assignments.
+2.Results Analysis:
+(1)【PCA】
+Given our pipeline's streamlined nature, we conducted an in-depth analysis of the PCA outputs to investigate the spatial features captured by the model. To "open the black box" of the latent space, we further visualize and analyze the dimensionality reduction results:
+PC1 — Global Defect Density Axis
+PC1 High→ High overall defect density; many defects distributed across the wafer.
+PC1 Low→ Low overall defect density; few or near-absent defects.
+PC2 — Spatial Dispersion / Structure Axis
+PC2 High→ Defects are sparsely and randomly scattered; weak spatial correlation.
+PC2 Low→ Defects exhibit spatial clustering or localized structure; strong spatial correlation.
+PC3 – Random Noise vs. Structural Signal
+PC3 High→ Appears more random and noisy, with no obvious structure in the data points.
+PC3 Low→ :Cleaner/more regular, with fewer defects or a more orderly arrangement of defects.
+While PC1–PC3 exhibit clear and interpretable defect-related patterns, higher-order components (PC4–PC5) become increasingly mixed and less semantically coherent.
+In particular, PC5 shows a noticeable mixture of wafers with central defect patterns and near-normal wafers, suggesting that the underlying structural semantics along this axis are no longer well aligned with a single physical defect mode.
+These components are therefore more likely to capture residual variance and heterogeneous noise rather than distinct, meaningful defect structures.
+Examples：
+<img width="3000" height="4800" alt="pc1_high" src="https://github.com/user-attachments/assets/abaa6288-d0e0-4031-8f6b-4ad30472f55c" />
+<img width="3000" height="4800" alt="pc1_low" src="https://github.com/user-attachments/assets/3c5ee4d1-cb74-4e8f-98f7-2973a84e4af9" />
+
+3. GMM &entropy-based UMAP
+The Transition Entropy map quantifies the uncertainty of our GMM predictions. Bright regions indicate high-entropy transition states where samples exhibit overlapping characteristics of multiple failure modes. This confirms our hypothesis of a 'continuous slope' in wafer defects, highlighting the model's ability to identify ambiguous samples that may require human secondary inspection.
+<img width="3000" height="2400" alt="umap_entropy" src="https://github.com/user-attachments/assets/520fa24b-756e-4ec7-a032-f6d81103032e" />
+<img width="3000" height="2400" alt="umap_clusters" src="https://github.com/user-attachments/assets/19bf8eed-63cd-458f-b925-0d8e559a0a18" />
+
+4. Analysis of GMM Clustering Results
+Since each of the 10 clusters is further bifurcated into Core and Boundary regions based on probability density, we can categorize the Cluster Cores into three primary "Production Baselines" for a more streamlined and efficient analysis:
+（1）	The Golden Standard (Clusters 7, 8)
+Morphology: Extremely pristine surfaces with minimal, highly uniform white noise.
+Definition: Represents the theoretical maximum quality attainable under current process conditions.
+<img width="3000" height="4800" alt="core" src="https://github.com/user-attachments/assets/fe1921c8-1c4e-4551-b264-f2293cdb2454" />
+<img width="3000" height="4800" alt="core" src="https://github.com/user-attachments/assets/a489379a-9dbe-4bae-872d-a47733db539e" />
+
+（2）	The Process Buffer (Clusters 0, 1, 2, 4)
+Morphology: Medium-density white noise.
+Definition: Represents routine process fluctuations. This background noise reflects minor environmental disturbances during production—while not perfect, it remains well within acceptable yield tolerances.
+<img width="3000" height="4800" alt="core" src="https://github.com/user-attachments/assets/c4d11097-06a4-4379-99ae-3719c6c7e23d" />
+<img width="3000" height="4800" alt="core" src="https://github.com/user-attachments/assets/0f8fa8ef-f5cb-4cb4-b89f-6d98a9712bca" />
+<img width="3000" height="4800" alt="core" src="https://github.com/user-attachments/assets/868c53ee-a0f5-4055-9ea5-b311054d0cd8" />
+<img width="3000" height="4800" alt="core" src="https://github.com/user-attachments/assets/c592afe7-94cc-4607-9a1b-ee5351ff2136" />
+(Cluster Core-4 already has certain minor Loc defect.Depending on the real-world criteria,it could be either minor Loc defect or acceptable noises.)
+
+（3）	The Machine Artifacts (Cluster 5)
+Morphology: Distinctive black noise, uniformly distributed across the entire wafer.
+Definition: Identified as systematic errors from the sampling hardware. The model successfully isolated this "systemic background noise" (a non-physical defect), demonstrating the power of self-supervised feature extraction in identifying sensor-specific biases.
+For boundry types, since they all have various defect type combination, we take 0 for an example, A granular inspection of Boundary 0 reveals a concentrated 'taxonomy of failure,' where standard industrial defects such as Loc (1), Center (2), Scratch (3), and Donut/Edge-Ring (4) are clearly identifiable; this confirms that our GMM effectively pushes all morphologically diverse anomalies to the distribution boundaries, a pattern that consistently repeats across all other clusters. In other boundary types, we also encounter enormous kinds of catastrophic random defects, so we won't elaborate on them here.
+<img width="3000" height="4800" alt="core" src="https://github.com/user-attachments/assets/83618254-f364-486b-adfd-e23196ae09a0" />
+
+6. Benchmarking
+We unified the evaluation "worldview" by treating anomaly scores (Negative Log-Likelihood for GMM, Reconstruction Error for AE) as a continuous ranking metric to calculate ROC-AUC. This allows heterogeneous methods with different modeling assumptions to be compared under a unified and fair evaluation framework. Specifically, we use Negative Log-Likelihood as the anomaly score for GMM, and reconstruction error for AutoEncoder-based methods.
+All scores are treated as continuous rankings rather than hard labels.
+Methodology	                      Feature Representation	ROC-AUC             	PR-AUC
+Manual + AutoEncoder	          Hand-crafted (14D)	      0.783	               0.953
+Manual + Isolation Forest	      Hand-crafted (14D)	      0.802	               0.95
+DINOv2 + GMM (Ours)	              Semantic Latent (384D)	  0.933	               0.810
+<img width="908" height="698" alt="image" src="https://github.com/user-attachments/assets/1f4ccdab-990c-4af1-b9b8-7b8884210993" />
+
+Analysis: The leap from 0.80 to 0.93 represents a dimensional shift. While the NaN result on the training set (caused by extreme class imbalance where 'none' samples dominate) was a numerical anomaly, the 0.933 ROC-AUC on the independent test set stands as a robust validation of our latent-space modeling.
+Interestingly, traditional models show a higher PR-AUC than our ViT-based model. This is actually due to "Feature Blindness": simple models only catch the most obvious defects, so they rarely make mistakes on easy samples, which creates a "fake" high precision.
+Our ViT model, however, is "too sensitive" because it sees much more detail. The drop in our PR-AUC shows that the model is finding the "Grey Zone"—those wafers that look "normal" to humans but are already starting to drift toward failure. We aren't failing at precision; we are just catching subtle anomalies that human labels often miss.
+Moreover, It is important to note that labels were not used as training data at any stage of the pipeline; therefore, the task remains strictly unsupervised in nature. The use of labels in post-hoc score computation and evaluation serves primarily to quantify the degree of alignment between self-supervised representations (machine knowledge) and human expert annotations (human knowledge). This allows for a more objective comparison across different models and helps verify that the observed performance gains indeed reflect a genuine dimensional or representational improvement rather than incidental effects.
+
+This evaluation strategy is well aligned with industrial practice. By analyzing score distributions against human labels, we can determine an optimal operating threshold and directly address a practical question faced in manufacturing environments: at what anomaly score should the system trigger intervention or halt production?
+
+5.4.Future Outlook: Industrial Preventive Maintenance
+If provided with more time or data (e.g., from Nano Lab), our framework could be extended in several high-impact directions:
+1.	Confidence Histograms: Visualizing the "uncertainty" of GMM predictions to filter out ambiguous samples.
+Beyond assigning each wafer to a cluster, the probabilistic nature of GMM allows us to quantify prediction confidence. By visualizing confidence histograms (e.g., posterior probabilities or negative log-likelihood distributions), ambiguous or high-uncertainty samples can be explicitly identified and filtered, which are particularly valuable for human inspection or downstream decision-making. Such uncertainty-aware analysis would improve the robustness of industrial deployment by preventing overconfident decisions on low-quality inputs.
+2.	Cosine-Similarity Optimized PCA(or even more dimentional reduction methods & clustering methods based directly on cosine-similarity): Although L2 normalization partially aligns Euclidean distance with cosine similarity, the two metrics are not strictly equivalent. Since Transformer-based models such as DINO primarily encode information in angular relationships, a more principled extension would involve dimensionality reduction and clustering methods that directly operate on cosine similarity. This could include cosine-aware PCA variants, kernel methods, or clustering algorithms explicitly designed for angular distance. Aligning the distance metric across representation learning, dimensionality reduction, and clustering would improve mathematical consistency and may further stabilize the latent structure.
+3.	Defect Drift Tracking (Predictive Intervention): This could be a critical industrial application. Our model’s sensitivity to high-entropy transition states allows for the early detection of "defect drift." Instead of reacting to failed wafers in a post-mortem manner, gradual shifts in the latent distribution can be monitored over time, enabling earlier intervention before contamination effects accumulate into catastrophic economic loss
+4.	Extension to flow-based GMM for more flexible density modeling. Standard GMM assumes Gaussian components in latent space, which may still be restrictive for complex industrial data. A natural model extension would be to integrate flow-based models to construct more expressive models, especially considering the generative models we studied in the course, since the dependence of k on prior specification directly leads to the intermixing of several defect categories within various boundaries, making it difficult to further refine specific defect types or potentially increasing the workload for reverse-tracing process defects. invertible density transformations before or within the mixture framework. The Flow-based GMM learns a continuous probability density field. Instead of rigidly assuming there must be ten pre-specified categories and fitting them with a fixed number of Gaussian distributions, it learns the 'flow direction' across the entire feature space to capture more dynamic and intrinsic patterns. In terms of application, this approach may be better equipped to capture more subtle wafer textures. 
+5. ViT fine-tuning: Further visualize the ViT's attention to identify key regions, followed by targeted fine-tuning based on these findings to acquire more core, context-specific features."
 
 
 
