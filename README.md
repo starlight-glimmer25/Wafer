@@ -403,6 +403,8 @@ Manual + AutoEncoder	          Hand-crafted (14D)	      0.783	               0.9
 Manual + Isolation Forest	      Hand-crafted (14D)	      0.802	               0.95
 DINOv2 + GMM (Ours)	              Semantic Latent (384D)	  0.933	               0.810
 <img width="908" height="698" alt="image" src="https://github.com/user-attachments/assets/1f4ccdab-990c-4af1-b9b8-7b8884210993" />
+<img width="884" height="690" alt="image" src="https://github.com/user-attachments/assets/b2e63343-9f0c-4c40-b47b-7d7e7bdd0f7a" />
+<img width="1032" height="858" alt="image" src="https://github.com/user-attachments/assets/5941d6e2-ef7f-4dbd-aa51-17cdf3bca7d4" />
 
 Analysis: The leap from 0.80 to 0.93 represents a dimensional shift. While the NaN result on the training set (caused by extreme class imbalance where 'none' samples dominate) was a numerical anomaly, the 0.933 ROC-AUC on the independent test set stands as a robust validation of our latent-space modeling.
 Interestingly, traditional models show a higher PR-AUC than our ViT-based model. This is actually due to "Feature Blindness": simple models only catch the most obvious defects, so they rarely make mistakes on easy samples, which creates a "fake" high precision.
