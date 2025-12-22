@@ -4,6 +4,8 @@ To run the code, two environments are required. One environment, dino311, is use
 
 Only one .sh submission script is provided because, aside from changes in file paths, file names, log directories, and environment activation commands, the scripts are otherwise identical. Similarly, only one version of the code for running the three dataset splits is submitted, since the train/val/test pre-split .pkl files all use the same ViT model to generate embeddings. The only differences are, again, the file names, input/output paths, and logging paths.
 
+If there are any issues encountered during code execution, or if anything unexpected arises, please notify me promptly. Thank you.
+
 ## Part 1: Problem Overview
 1.1 Introduction
 This project focuses on developing an unsupervised anomaly detection system for semiconductor wafer maps. In the semiconductor industry, even minor undetected defects on wafers can result in severe yield loss, especially when the issue is only discovered after dozens or even hundreds of wafers have already been manufactured and discarded. 
