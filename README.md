@@ -398,13 +398,19 @@ For boundry types, since they all have various defect type combination, we take 
 6. Benchmarking
 We unified the evaluation "worldview" by treating anomaly scores (Negative Log-Likelihood for GMM, Reconstruction Error for AE) as a continuous ranking metric to calculate ROC-AUC. This allows heterogeneous methods with different modeling assumptions to be compared under a unified and fair evaluation framework. Specifically, we use Negative Log-Likelihood as the anomaly score for GMM, and reconstruction error for AutoEncoder-based methods.
 All scores are treated as continuous rankings rather than hard labels.
+
 Methodology	                      Feature Representation	ROC-AUC             	PR-AUC
 Manual + AutoEncoder	          Hand-crafted (14D)	      0.783	               0.953
 Manual + Isolation Forest	      Hand-crafted (14D)	      0.802	               0.95
 DINOv2 + GMM (Ours)	              Semantic Latent (384D)	  0.933	               0.810
+<img width="730" height="514" alt="image" src="https://github.com/user-attachments/assets/374237c9-3938-4a6e-9684-8a0355a0cfe5" />
+
 <img width="908" height="698" alt="image" src="https://github.com/user-attachments/assets/1f4ccdab-990c-4af1-b9b8-7b8884210993" />
 <img width="884" height="690" alt="image" src="https://github.com/user-attachments/assets/b2e63343-9f0c-4c40-b47b-7d7e7bdd0f7a" />
 <img width="1032" height="858" alt="image" src="https://github.com/user-attachments/assets/5941d6e2-ef7f-4dbd-aa51-17cdf3bca7d4" />
+<img width="884" height="698" alt="image" src="https://github.com/user-attachments/assets/e9554f18-3232-473e-9145-e9053be8ffd3" />
+<img width="858" height="700" alt="image" src="https://github.com/user-attachments/assets/b348009d-1b96-4d64-86c5-adb6576b5560" />
+<img width="1004" height="854" alt="image" src="https://github.com/user-attachments/assets/2afc2d88-e1d7-4bb4-b61d-31be770fd303" />
 
 Analysis: The leap from 0.80 to 0.93 represents a dimensional shift. While the NaN result on the training set (caused by extreme class imbalance where 'none' samples dominate) was a numerical anomaly, the 0.933 ROC-AUC on the independent test set stands as a robust validation of our latent-space modeling.
 Interestingly, traditional models show a higher PR-AUC than our ViT-based model. This is actually due to "Feature Blindness": simple models only catch the most obvious defects, so they rarely make mistakes on easy samples, which creates a "fake" high precision.
@@ -426,7 +432,7 @@ Beyond assigning each wafer to a cluster, the probabilistic nature of GMM allows
 
 
 
-This project will be completed individually.
+This project was completed individually.
 
 
 
